@@ -2,7 +2,7 @@
  *
  *        Title: Sensors
  *  Description: Display raw sensors, used for 'record' meta-behavior
- * Scheduler ID: 
+ * Scheduler ID:
  *    Framework: Canvas2D
  *       Author: Dylan Simon <dylan@dylex.net>
  *      Created: 2017-04

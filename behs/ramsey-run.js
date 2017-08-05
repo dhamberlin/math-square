@@ -1,14 +1,3 @@
-/* MoMath Math Square Behavior
- *
- *        Title: P5 Example
- *  Description: Display user blobs and sensors (same as debug)
- * Scheduler ID:
- *    Framework: P5
- *       Author: Dylan Simon <dylan@dylex.net>
- *      Created: 2017-04
- *       Status: works
- */
-
 import P5Behavior from 'p5beh';
 
 const pb = new P5Behavior();
@@ -28,22 +17,25 @@ pb.setup = function (p) {
 
 pb.draw = function (floor, p) {
   /* this == pb.p5 == p */
-  // draw here...
-  this.clear();
+  // this.fill('#FF00FF');
+  console.log('yoooooo')
+  this.rect(0,0,100,100);
   this.background('#FF00FF')
+  // draw here...
+  // this.clear();
   for (let u of floor.users) {
     pb.drawUser(u);
   }
-  this.fill(128, 128, 128, 128);
+  this.fill(1, 1, 1, 1);
   this.noStroke();
   pb.drawSensors(floor.sensors);
 };
 
 export const behavior = {
-  title: "Sensor Debug (P5)",
+  title: "Ramsey Run",
   init: pb.init.bind(pb),
   frameRate: 'sensors',
   render: pb.render.bind(pb),
-  numGhosts: 1
+  numGhosts: 6
 };
 export default behavior
