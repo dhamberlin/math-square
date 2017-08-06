@@ -39,6 +39,7 @@ const vertexCoordinates = [
         [500, 199]
     ],
 ];
+
 const dist = (x1, y1, x2, y2) => {
     return Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 }
@@ -47,9 +48,6 @@ const dim = (color) => {
 }
 class Board {
     constructor(coords) {
-        //console.log(coords)
-        //console.log('NEW BOARD COORDS: ', coords)
-        console.log(coords)
         if (coords[0][0] ===  40) this.bg = [dim(140), dim(36), dim(41)];
         else if (coords[0][0] === 360) this.bg = [dim(54), dim(118), dim(54)];
         else if (coords[0][0] === 128) this.bg = [dim(212), dim(154), dim(50)];
@@ -60,31 +58,43 @@ class Board {
         this.adjacency = Array(coords.length).fill(0).map(row => Array(coords.length).fill(0)));
     this.currentColor = RED;
     this.active = null; // Holds current active vertex
+    this.triangle = []; // Holds vertices of a triangle if present
+    this.flash = false; // Toggles flashing
+    this.flashCount = 0; // Counts frames for slower flashing
 }
 draw(activeSensors) {
-    if (this.gameOver) return;
+    if (this.gameOver) {
+      this.flash = this.toggleFlash();
+    }
     // draw edges
     for (let i = 0; i < this.vertices.length - 1; i++) {
         for (let j = i + 1; j < this.vertices.length; j++) {
             if (this.adjacency[i][j]) {
                 pb.p5.strokeWeight(2.75)
                 pb.p5.stroke(this.adjacency[i][j])
+                if (this.triangle.includes(i) && this.triangle.includes(j)) {
+                  if (this.flash) {
+                    pb.p5.strokeWeight(0)
+                  }
+                }
                 pb.p5.line(this.vertices[i].x, this.vertices[i].y, this.vertices[j].x, this.vertices[j].y)
                 pb.p5.strokeWeight(1)
-            }
-        }
-    }
-    this.vertices.forEach(vertex => {
-        // check for collisions
-        const canActivate = vertex.degree < (this.vertices.length - 1);
-        const notSelf = vertex !== this.active;
-        const currentlySteppedOn = vertex.checkCollisions(activeSensors)
-        if (canActivate && notSelf && currentlySteppedOn) {
-            this.activate(vertex);
-        };
+              }
+          }
+      }
+
+      this.vertices.forEach(vertex => {
+          // check for collisions
+          const canActivate = vertex.degree < (this.vertices.length - 1);
+          const notSelf = vertex !== this.active;
+          const currentlySteppedOn = vertex.checkCollisions(activeSensors)
+          if (canActivate && notSelf && currentlySteppedOn) {
+              this.activate(vertex);
+          };
 
         // draw
-        const strokeColor = vertex === this.active ? this.currentColor : BLACK;
+        const strokeColor = vertex === this.active ? this.currentColor : WHITE;
+        const outlineWeight = vertex === this.active ? 6 : 0
         const fillColor = currentlySteppedOn ? this.currentColor : vertex.color;
         const radii = currentlySteppedOn ? 32 : 24;
 
@@ -92,80 +102,100 @@ draw(activeSensors) {
         pb.p5.fill(fillColor);
         pb.p5.ellipse(vertex.x, vertex.y, radii);
 
-        pb.p5.noFill();
-        pb.p5.strokeWeight(6);
-        pb.p5.stroke.apply(pb.p5, vertex.bg);
+        // pb.p5.noFill();
+        // pb.p5.strokeWeight(6);
+        // pb.p5.stroke.apply(pb.p5, vertex.bg);
+        // pb.p5.ellipse(vertex.x, vertex.y, radii);
+
+        pb.p5.strokeWeight(outlineWeight);
+        pb.p5.stroke(strokeColor);
         pb.p5.ellipse(vertex.x, vertex.y, radii);
 
-        pb.p5.strokeWeight(3);
-        pb.p5.stroke(strokeColor);
-        pb.p5.ellipse(vertex.x, vertex.y, 32);
+        // fill triangle if needed
+        if (this.triangle.length > 0 && !this.flash) {
+          const x1 = this.vertices[this.triangle[0]].x;
+          const y1 = this.vertices[this.triangle[0]].y
+          const x2 = this.vertices[this.triangle[1]].x;
+          const y2 = this.vertices[this.triangle[1]].y
+          const x3 = this.vertices[this.triangle[2]].x;
+          const y3 = this.vertices[this.triangle[2]].y
+          pb.p5.noStroke();
+          pb.p5.fill(this.adjacency[this.triangle[0]][this.triangle[1]]);
+          pb.p5.triangle(x1, y1, x2, y2, x3, y3);
+        }
 
         this.shouldGameEnd();
     });
 }
 shouldGameEnd() {
-    if (this.checkForTriangle() || this.edgesLeft()) {
-        setTimeout((() => {
-            this.reset()
-        }).bind(this), 1000)
-    }
+  if (this.gameOver) return;
+  const triangleExists = this.checkForTriangle();
+  const noEdgesLeft = this.noEdgesLeft();
+  if (triangleExists || noEdgesLeft) {
+    this.gameOver = true;
+    setTimeout((() => {
+        this.reset()
+    }).bind(this), 3000)
+  }
 }
-connect(v1, v2) {
-    const a = this.vertices.indexOf(v1);
-    const b = this.vertices.indexOf(v2);
-    this.adjacency[a][b] = this.currentColor;
-    this.adjacency[b][a] = this.currentColor;
-}
-checkForTriangle() {
-    const l = this.vertices.length;
-    for (let i = 0; i < l - 2; i++) {
-        for (let j = i + 1; j < l - 1; j++) {
-            for (let k = j + 1; k < l; k++) {
-                const edges = [this.adjacency[i][j], this.adjacency[j][k], this.adjacency[i][k]]
-                const triangleExists = edges.reduce((acc, edge) => edge === acc ? acc : null);
-                if (triangleExists) {
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
-}
-edgesLeft() {
-    return this.vertices.every(v => v.degree === this.vertices.length - 1);
-}
-activate(vertex) {
-    console.log('active')
-    if (!this.cooldown) {
-        this.cooldown = true;
-        if (this.active) {
-            const a = this.vertices.indexOf(this.active);
-            const b = this.vertices.indexOf(vertex);
-            const moveAllowed = !this.adjacency[a][b];
-            if (moveAllowed) {
-                vertex.degree++;
-                this.active.degree++;
-                this.connect(this.active, vertex);
-                this.active = null;
 
-                this.currentColor = this.currentColor === BLUE ? RED : BLUE;
-            }
-        } else {
-            this.active = vertex;
-        }
-        //console.table(this.adjacency)
-    }
-    setTimeout(() => {
-        this.cooldown = false
-    }, 200);
-}
-reset() {
-    if (!this.gameOver) {
-        this.gameOver = true;
-        resetBoard(this);
-    }
-}
+  connect(v1, v2) {
+      const a = this.vertices.indexOf(v1);
+      const b = this.vertices.indexOf(v2);
+      this.adjacency[a][b] = this.currentColor;
+      this.adjacency[b][a] = this.currentColor;
+  }
+  checkForTriangle() {
+      const l = this.vertices.length;
+      for (let i = 0; i < l - 2; i++) {
+          for (let j = i + 1; j < l - 1; j++) {
+              for (let k = j + 1; k < l; k++) {
+                  const edges = [this.adjacency[i][j], this.adjacency[j][k], this.adjacency[i][k]]
+                  const triangleExists = edges.reduce((acc, edge) => edge === acc ? acc : null);
+                  if (triangleExists) {
+                      this.triangle = [i, j, k];
+                      return true;
+                  }
+              }
+          }
+      }
+      return false;
+  }
+  noEdgesLeft() {
+      return this.vertices.every(v => v.degree === this.vertices.length - 1);
+  }
+  activate(vertex) {
+      if (!this.cooldown) {
+          this.cooldown = true;
+          if (this.active) {
+              const a = this.vertices.indexOf(this.active);
+              const b = this.vertices.indexOf(vertex);
+              const moveAllowed = !this.adjacency[a][b];
+              if (moveAllowed) {
+                  vertex.degree++;
+                  this.active.degree++;
+                  this.connect(this.active, vertex);
+                  this.active = null;
+
+                  this.currentColor = this.currentColor === BLUE ? RED : BLUE;
+              }
+          } else {
+              this.active = vertex;
+          }
+      }
+      setTimeout(() => {
+          this.cooldown = false
+      }, 2000);
+  }
+
+  toggleFlash() {
+    this.flashCount = (this.flashCount + 1) % 20;
+    return this.flashCount > 4;
+  }
+
+  reset() {
+    resetBoard(this);
+  }
 }
 class Vertex {
     constructor([x, y], bg = BLACK) {
@@ -191,8 +221,6 @@ const drawBoards = (activeSensors) => {
 }
 const resetBoard = (board) => {
     const index = boards.indexOf(board);
-    // console.log('index: ', index)
-    // console.log('coordinates: ', vertexCoordinates[index])
     boards[index] = new Board(vertexCoordinates[index]);
 }
 
@@ -258,11 +286,10 @@ pb.draw = function(floor, p) {
     drawBoards(activeSensors);
 };
 export const behavior = {
-    title: "ESTOS TIOS SIEMPRE ARMANDO QUILOMBO",
-    init: pb.init.bind(pb),
-    frameRate: 'sensors',
-    render: pb.render.bind(pb),
-    numGhosts: 0,
-
+  title: "ALFA LOBO DINAMITA",
+  init: pb.init.bind(pb),
+  frameRate: 'animate',
+  render: pb.render.bind(pb),
+  numGhosts: 0,
 };
 export default behavior
