@@ -1,41 +1,48 @@
 import P5Behavior from 'p5beh';
+import * as Sensor from 'sensors';
 
 const pb = new P5Behavior();
 
-// for WEBGL: pb.renderer = 'webgl';
+var position = { x: 10, y: 10 }
+var speed = { x: 10, y: 5 }
 
 pb.preload = function (p) {
-  /* this == pb.p5 == p */
-  // ...
+
 }
 
 pb.setup = function (p) {
-  /* this == pb.p5 == p */
-  /* P5Behavior already calls createCanvas for us */
-  // setup here...
+  
 };
 
-pb.draw = function (floor, p) {
-  /* this == pb.p5 == p */
-  // this.fill('#FF00FF');
-  console.log('yoooooo')
-  this.rect(0,0,100,100);
-  this.background('#FF00FF')
-  // draw here...
-  // this.clear();
-  for (let u of floor.users) {
-    pb.drawUser(u);
+let flag = true;
+
+pb.draw = function (floor, p) {  
+  // for (let u of floor.users) {
+  //   pb.drawUser(u);
+  // }
+  this.background('#00FF00');
+  this.noFill();
+  this.stroke('#000000');
+  // console.log('Hello');
+  const activeSensors = [];
+  for(var i = new Sensor.Index(); i; i = i.incr()){
+    if (floor.sensors.get(i)){
+      this.ellipse(i.x * 8, i.y * 8, 20);
+      activeSensors.push({ x: i.x, y: i.y });
+    }
   }
-  this.fill(1, 1, 1, 1);
-  this.noStroke();
-  pb.drawSensors(floor.sensors);
+
+  console.log(JSON.stringify(activeSensors));
+
+  // pb.drawSensors(floor.sensors);  
 };
 
 export const behavior = {
-  title: "Ramsey Run",
+  title: "ALFA LOBO DINAMITA",
   init: pb.init.bind(pb),
   frameRate: 'sensors',
   render: pb.render.bind(pb),
-  numGhosts: 6
+  numGhosts: 0,
 };
+
 export default behavior
