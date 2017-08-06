@@ -1,8 +1,12 @@
 import P5Behavior from 'p5beh';
 import * as Sensor from 'sensors';
 const pb = new P5Behavior();
-const blue = 'blue';
-const red = 'red';
+
+const BLACK = '#090909';
+const WHITE = '#fdfdfd';
+const RED = '#cc0000';
+const BLUE = '#0000cc';
+
 const vertexCoordinates = [
     [
         [40, 128],
@@ -43,11 +47,18 @@ const dim = (color) => {
 }
 class Board {
     constructor(coords) {
-        console.log('NEW BOARD COORDS: ', coords)
-        this.vertices = coords.map(c => new Vertex(c));
+        //console.log(coords)
+        //console.log('NEW BOARD COORDS: ', coords)
+        console.log(coords)
+        if (coords[0][0] ===  40) this.bg = [dim(140), dim(36), dim(41)];
+        else if (coords[0][0] === 360) this.bg = [dim(54), dim(118), dim(54)];
+        else if (coords[0][0] === 128) this.bg = [dim(212), dim(154), dim(50)];
+        else this.bg = [dim(22), dim(72), dim(133)];
+
+        this.vertices = coords.map(c => new Vertex(c, this.bg));
         // Initialize empty adjacency matrix
         this.adjacency = Array(coords.length).fill(0).map(row => Array(coords.length).fill(0)));
-    this.currentColor = 'blue';
+    this.currentColor = RED;
     this.active = null; // Holds current active vertex
 }
 draw(activeSensors) {
@@ -56,7 +67,7 @@ draw(activeSensors) {
     for (let i = 0; i < this.vertices.length - 1; i++) {
         for (let j = i + 1; j < this.vertices.length; j++) {
             if (this.adjacency[i][j]) {
-                pb.p5.strokeWeight(3)
+                pb.p5.strokeWeight(2.75)
                 pb.p5.stroke(this.adjacency[i][j])
                 pb.p5.line(this.vertices[i].x, this.vertices[i].y, this.vertices[j].x, this.vertices[j].y)
                 pb.p5.strokeWeight(1)
@@ -73,11 +84,23 @@ draw(activeSensors) {
         };
 
         // draw
-        const strokeColor = vertex === this.active ? this.currentColor : 'white';
-        const fillColor = currentlySteppedOn ? 'white' : vertex.color;
-        pb.p5.stroke(strokeColor);
+        const strokeColor = vertex === this.active ? this.currentColor : BLACK;
+        const fillColor = currentlySteppedOn ? this.currentColor : vertex.color;
+        const radii = currentlySteppedOn ? 32 : 24;
+
+        pb.p5.noStroke();
         pb.p5.fill(fillColor);
+        pb.p5.ellipse(vertex.x, vertex.y, radii);
+
+        pb.p5.noFill();
+        pb.p5.strokeWeight(6);
+        pb.p5.stroke.apply(pb.p5, vertex.bg);
+        pb.p5.ellipse(vertex.x, vertex.y, radii);
+
+        pb.p5.strokeWeight(3);
+        pb.p5.stroke(strokeColor);
         pb.p5.ellipse(vertex.x, vertex.y, 32);
+
         this.shouldGameEnd();
     });
 }
@@ -126,12 +149,12 @@ activate(vertex) {
                 this.connect(this.active, vertex);
                 this.active = null;
 
-                this.currentColor = this.currentColor === 'blue' ? 'red' : 'blue';
+                this.currentColor = this.currentColor === BLUE ? RED : BLUE;
             }
         } else {
             this.active = vertex;
         }
-        console.table(this.adjacency)
+        //console.table(this.adjacency)
     }
     setTimeout(() => {
         this.cooldown = false
@@ -145,10 +168,11 @@ reset() {
 }
 }
 class Vertex {
-    constructor([x, y]) {
+    constructor([x, y], bg = BLACK) {
         this.x = x;
         this.y = y;
-        this.color = '#000';
+        this.color = WHITE;
+        this.bg = bg;
         this.degree = 0;
     }
     checkCollisions(collisionsArray) {
@@ -167,16 +191,23 @@ const drawBoards = (activeSensors) => {
 }
 const resetBoard = (board) => {
     const index = boards.indexOf(board);
-    console.log('index: ', index)
-    console.log('coordinates: ', vertexCoordinates[index])
+    // console.log('index: ', index)
+    // console.log('coordinates: ', vertexCoordinates[index])
     boards[index] = new Board(vertexCoordinates[index]);
 }
-pb.preload = function(p) {}
+
+pb.preload = function(p) {
+
+}
+
 pb.setup = function(p) {
 
 };
+
 pb.draw = function(floor, p) {
-    this.background('#FFF');
+    this.background(BLACK);
+    // this.image(img, 0, 0);
+    this.noStroke();
     this.fill(dim(140), dim(36), dim(41));
     this.rect(0, 0, 256, 256);
     this.fill(dim(22), dim(72), dim(133));
@@ -185,15 +216,24 @@ pb.draw = function(floor, p) {
     this.rect(0, 320, 256, 256);
     this.fill(dim(54), dim(118), dim(54));
     this.rect(320, 320, 256, 256);
-    this.fill('#000000');
+    // TEXT
+    this.fill(WHITE);
+    this.strokeWeight(1);
+    this.noStroke();
     this.textSize(22);
     this.text("Try to make (or avoid making) a triangle in", 30, 295)
-    this.fill('#FF0000');
+    this.fill(RED);
+    this.noStroke();
     this.text("your", 448, 295)
-    this.fill('#0000FF');
+    this.fill(BLUE);
+    this.noStroke();
     this.text("color.", 496, 295)
     this.noFill();
+    this.noStroke();
+    this.strokeWeight(1);
     this.stroke('#000000');
+
+
     // draw grid
     // for(var i = 1; i < 72; i++) {
     // this.stroke('#DDD');
@@ -218,7 +258,7 @@ pb.draw = function(floor, p) {
     drawBoards(activeSensors);
 };
 export const behavior = {
-    title: "ALFA LOBO DINAMITA",
+    title: "ESTOS TIOS SIEMPRE ARMANDO QUILOMBO",
     init: pb.init.bind(pb),
     frameRate: 'sensors',
     render: pb.render.bind(pb),
