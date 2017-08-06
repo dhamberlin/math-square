@@ -1,4 +1,5 @@
 import P5Behavior from 'p5beh';
+import * as Sensor from 'sensors';
 
 const pb = new P5Behavior();
 
@@ -9,15 +10,17 @@ const  vertexCoordinates = [
   [[448, 40], [532, 101], [364, 101], [396, 199], [500, 199]],
 ];
 
-
+const dist = (x1,y1,x2,y2) => {
+  return Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
+}
 
 class Board {
   constructor(coords) {
     this.vertices = coords.map(c => new Vertex(c));
     this.adjacency = Array(coords.length).fill(Array(coords.length).fill(0));
   }
-  draw() {
-    console.log(this.adjacency)
+  draw(activeSensors) {
+    // console.log(this.adjacency)
     for (let i = 0; i < this.vertices.length - 1; i++) {
       for (let j = i + 1; j < this.vertices.length; j++) {
         if (this.adjacency[i][j]) {
@@ -28,7 +31,11 @@ class Board {
     }
     pb.p5.fill('purple');
     pb.p5.stroke('white');
-    this.vertices.forEach(({x, y}) => pb.p5.ellipse(x, y, 24));
+    this.vertices.forEach(vertex => {
+      vertex.checkCollisions(activeSensors);
+      pb.p5.fill(vertex.color);
+      pb.p5.ellipse(vertex.x, vertex.y, 24);
+    });
   }
   connect(v1, v2, color) {
     const a = this.vertices.indexOf(v1);
@@ -43,6 +50,15 @@ class Vertex {
   constructor([x, y]) {
     this.x = x;
     this.y = y;
+    this.color = '#000';
+  }
+
+  checkCollisions(collisionsArray) {
+    collisionsArray.forEach(collisionObject => {
+      if(dist(collisionObject.x, collisionObject.y, this.x, this.y) < 24) {
+        this.color = '#FF00FF';
+      }
+    });
   }
 }
 
@@ -52,30 +68,49 @@ function triangleTest() {
 
 const boards = vertexCoordinates.map(v => new Board(v));
 
-const drawBoards = () => {
-  boards.forEach(b => b.draw())
+const drawBoards = (activeSensors) => {
+  boards.forEach(b => b.draw(activeSensors))
 }
 
-// for WEBGL: pb.renderer = 'webgl';
-
 pb.preload = function (p) {
-  /* this == pb.p5 == p */
-  // ...
+
 }
 
 pb.setup = function (p) {
-  /* this == pb.p5 == p */
-  /* P5Behavior already calls createCanvas for us */
-  // setup here...
-  console.log(boards)
+
 };
 
 pb.draw = function (floor, p) {
-  /* this == pb.p5 == p */
-  // draw here...
-  this.clear();
-  // this.background('#FF00FF')
-  drawBoards();
+  
+  this.background('#FFF');
+  this.noFill();
+  this.stroke('#000000');
+
+  
+
+  // draw grid
+
+  for(var i = 1; i < 72; i++) {
+    this.stroke('#DDD');
+    this.line(i * 8, 0, i * 8, 72 * 8);
+    this.line(0, i * 8, 72 * 8, i * 8);
+  }
+  for(var i = 1; i < 12; i++) {
+    this.stroke('#AAA');
+    this.line(i * 8 * 6, 0, i * 8 * 6, 72 * 8);
+    this.line(0, i * 8 * 6, 72 * 8, i * 8 * 6);
+  }
+
+  const activeSensors = [];
+  for(var i = new Sensor.Index(); i; i = i.incr()){
+    if (floor.sensors.get(i)){
+      this.ellipse(i.x * 8, i.y * 8, 20);
+      activeSensors.push({ x: i.x * 8, y: i.y * 8 });
+    }
+  }
+  console.log(JSON.stringify(activeSensors));
+
+  drawBoards(activeSensors);
   this.fill(1, 1, 1, 1);
   boards[0].vertices.forEach(v1 => {
     boards[0].vertices.forEach(v2 => {
@@ -85,10 +120,11 @@ pb.draw = function (floor, p) {
 };
 
 export const behavior = {
-  title: "Ramsey Run",
+  title: "ALFA LOBO DINAMITA",
   init: pb.init.bind(pb),
   frameRate: 'sensors',
   render: pb.render.bind(pb),
-  numGhosts: 0
+  numGhosts: 0,
 };
+
 export default behavior
