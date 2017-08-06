@@ -29,6 +29,8 @@ class Board {
 
   draw(activeSensors) {
     if (this.gameOver) return;
+
+    // draw edges
     for (let i = 0; i < this.vertices.length - 1; i++) {
       for (let j = i + 1; j < this.vertices.length; j++) {
         if (this.adjacency[i][j]) {
@@ -53,8 +55,14 @@ class Board {
       pb.p5.stroke(strokeColor);
       pb.p5.fill(fillColor);
       pb.p5.ellipse(vertex.x, vertex.y, 24);
-      this.checkForTriangle();
+      this.shouldGameEnd();
     });
+  }
+
+  shouldGameEnd() {
+    if (this.checkForTriangle() || this.edgesLeft()) {
+      setTimeout((() => {this.reset()}).bind(this), 1000)
+    }
   }
 
   connect(v1, v2) {
@@ -69,12 +77,19 @@ class Board {
     for (let i = 0; i < l - 2; i++) {
       for (let j = i + 1; j < l - 1; j++) {
         for (let k = j + 1; k < l; k++) {
-          if (this.adjacency[i][j] && this.adjacency[j][k] && this.adjacency[i][k]) {
-            setTimeout((() => {this.reset()}).bind(this), 1000)
+          const edges = [this.adjacency[i][j], this.adjacency[j][k], this.adjacency[i][k]]
+          const triangleExists = edges.reduce((acc, edge) => edge === acc ? acc : null);
+          if (triangleExists) {
+            return true;
           }
         }
       }
     }
+    return false;
+  }
+
+  edgesLeft() {
+    return this.vertices.every(v => v.degree === this.vertices.length - 1);
   }
 
   activate(vertex) {
@@ -97,12 +112,14 @@ class Board {
       }
       console.table(this.adjacency)
     }
-    setTimeout(() => { this.cooldown = false }, 2000);
+    setTimeout(() => { this.cooldown = false }, 200);
   }
 
   reset() {
-    console.log('this: ', this)
-    resetBoard(this);
+    if (!this.gameOver) {
+      this.gameOver = true;
+      resetBoard(this);
+    }
   }
 }
 
@@ -135,8 +152,9 @@ const drawBoards = (activeSensors) => {
 
 const resetBoard = (board) => {
   const index = boards.indexOf(board);
+  console.log('index: ', index)
   console.log('coordinates: ', vertexCoordinates[index])
-  // boards[index] = new Board(vertexCoordinates[index]);
+  boards[index] = new Board(vertexCoordinates[index]);
 }
 
 pb.preload = function (p) {
