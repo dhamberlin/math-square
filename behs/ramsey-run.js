@@ -20,7 +20,6 @@ class Board {
     this.adjacency = Array(coords.length).fill(Array(coords.length).fill(0));
   }
   draw(activeSensors) {
-    // console.log(this.adjacency)
     for (let i = 0; i < this.vertices.length - 1; i++) {
       for (let j = i + 1; j < this.vertices.length; j++) {
         if (this.adjacency[i][j]) {
@@ -35,6 +34,7 @@ class Board {
       vertex.checkCollisions(activeSensors);
       pb.p5.fill(vertex.color);
       pb.p5.ellipse(vertex.x, vertex.y, 24);
+      this.checkTriangle()
     });
   }
   connect(v1, v2, color) {
@@ -43,7 +43,18 @@ class Board {
     this.adjacency[a][b] = color;
     this.adjacency[b][a] = color;
   }
-  checkTriangle(){}
+  checkTriangle() {
+    const l = this.vertices.length;
+    for (let i = 0; i < l - 2; i++) {
+      for (let j = i + 1; j < l - 1; j++) {
+        for (let k = j + 1; k < l; k++) {
+          if (this.adjacency[i][j] && this.adjacency[j][k] && this.adjacency[i][k]) {
+            console.log(`triangle detected in board ${boards.indexOf(this)}`)
+          }
+        }
+      }
+    }
+  }
 }
 
 class Vertex {
@@ -62,10 +73,6 @@ class Vertex {
   }
 }
 
-function triangleTest() {
-
-}
-
 const boards = vertexCoordinates.map(v => new Board(v));
 
 const drawBoards = (activeSensors) => {
@@ -81,12 +88,12 @@ pb.setup = function (p) {
 };
 
 pb.draw = function (floor, p) {
-  
+
   this.background('#FFF');
   this.noFill();
   this.stroke('#000000');
 
-  
+
 
   // draw grid
 
