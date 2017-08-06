@@ -6,7 +6,7 @@ const  vertexCoordinates = [
   [[40, 128], [216, 128], [84, 52], [84, 204], [172, 52], [172, 204]],
   [[360, 448], [536, 448], [404, 372], [404, 524], [492, 372], [492, 524]],
   [[128, 360], [212, 421], [44, 421], [76, 519], [180, 519]],
-  // [[40, 128], [216, 128], [84, 52], [84, 204], [172, 52], [172, 204]],
+  [[448, 40], [532, 101], [364, 101], [396, 199], [500, 199]],
 ];
 
 
@@ -21,7 +21,8 @@ class Board {
     for (let i = 0; i < this.vertices.length - 1; i++) {
       for (let j = i + 1; j < this.vertices.length; j++) {
         if (this.adjacency[i][j]) {
-          pb.p5.line(this.vertices[i].x, this.vertices[i].y, this.vertices[j].x, this.vertices[i].y)
+          pb.p5.stroke(this.adjacency[i][j])
+          pb.p5.line(this.vertices[i].x, this.vertices[i].y, this.vertices[j].x, this.vertices[j].y)
         }
       }
     }
@@ -29,12 +30,13 @@ class Board {
     pb.p5.stroke('white');
     this.vertices.forEach(({x, y}) => pb.p5.ellipse(x, y, 24));
   }
-  connect(v1, v2) {
+  connect(v1, v2, color) {
     const a = this.vertices.indexOf(v1);
     const b = this.vertices.indexOf(v2);
-    this.adjacency[a][b] = 1;
-    this.adjacency[b][a] = 1;
+    this.adjacency[a][b] = color;
+    this.adjacency[b][a] = color;
   }
+  checkTriangle(){}
 }
 
 class Vertex {
@@ -77,7 +79,7 @@ pb.draw = function (floor, p) {
   this.fill(1, 1, 1, 1);
   boards[0].vertices.forEach(v1 => {
     boards[0].vertices.forEach(v2 => {
-      boards[0].connect(v1, v2);
+      boards[0].connect(v1, v2, 'blue');
     })
   })
 };
